@@ -16,7 +16,7 @@
 </div>
 
 <p align="center">
-  <img src="docs/images/widget-preview.png" alt="LidStay Desktop Widget Preview" width="680" />
+  <img src="docs/images/widget-preview-en.png" alt="LidStay Desktop Widget Preview" width="680" />
 </p>
 <p align="center">
   <em>Left: normal sleep on AC power. Right: closed-lid awake mode active on battery power.</em>

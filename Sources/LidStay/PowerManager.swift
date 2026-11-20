@@ -40,6 +40,18 @@ final class PowerManager {
         }
     }
 
+    var language: AppLanguage = {
+        if let raw = UserDefaults.standard.string(forKey: "lidstay.language"),
+           let parsed = AppLanguage(rawValue: raw) {
+            return parsed
+        }
+        return .system
+    }() {
+        didSet {
+            UserDefaults.standard.set(language.rawValue, forKey: "lidstay.language")
+        }
+    }
+
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private let sudoersPath = "/etc/sudoers.d/lidstay-pmset"
     @ObservationIgnored private var lastLowBatteryAttempt: Date? = nil

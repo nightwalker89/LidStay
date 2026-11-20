@@ -45,6 +45,10 @@ struct WidgetView: View {
         self.onHideWidget = onHideWidget
     }
 
+    private var l10n: L10n {
+        L10n(language: powerManager.language)
+    }
+
     private var isAwakeActive: Bool {
         powerManager.status.isAwakeActive
     }
@@ -87,7 +91,7 @@ struct WidgetView: View {
         ZStack {
             if useStaticBackdropForRender {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color(red: 0.14, green: 0.15, blue: 0.20).opacity(0.82))
+                    .fill(Color(red: 0.14, green: 0.15, blue: 0.20).opacity(0.84))
             } else {
                 VisualEffectBackdrop(material: .popover, blendingMode: .behindWindow)
             }
@@ -137,8 +141,8 @@ struct WidgetView: View {
                 HeaderIconButton(
                     systemName: isPinned ? "pin.fill" : "pin",
                     isActive: isPinned,
-                    accessibilityLabel: isPinned ? "Bỏ ghim nổi trên cửa sổ" : "Ghim nổi trên cửa sổ",
-                    helpText: isPinned ? "Đang ghim nổi trên cửa sổ" : "Đang đặt trên Desktop"
+                    accessibilityLabel: isPinned ? l10n.pinAccessOn : l10n.pinAccessOff,
+                    helpText: isPinned ? l10n.pinHelpOn : l10n.pinHelpOff
                 ) {
                     onTogglePin()
                 }
@@ -146,8 +150,8 @@ struct WidgetView: View {
                 HeaderIconButton(
                     systemName: "slider.horizontal.3",
                     isActive: showSettingsPopover,
-                    accessibilityLabel: "Tuỳ chọn LidStay",
-                    helpText: "Tuỳ chọn nhanh"
+                    accessibilityLabel: l10n.optionsAccess,
+                    helpText: l10n.optionsHelp
                 ) {
                     showSettingsPopover.toggle()
                 }
@@ -208,7 +212,7 @@ struct WidgetView: View {
         if let pct = powerManager.status.batteryPercent {
             return "\(pct)%"
         }
-        return powerManager.status.isOnACPower ? "AC" : "Pin"
+        return powerManager.status.isOnACPower ? "AC" : l10n.batteryFallback
     }
 
     private var mainToggleRow: some View {
@@ -251,7 +255,8 @@ struct WidgetView: View {
 
             TogglePillButton(
                 isOn: isAwakeActive,
-                isLoading: powerManager.isUpdating
+                isLoading: powerManager.isUpdating,
+                accessibilityLabel: isAwakeActive ? l10n.toggleOnAccess : l10n.toggleOffAccess
             ) {
                 powerManager.toggle()
             }
@@ -260,19 +265,19 @@ struct WidgetView: View {
 
     private var primaryTitleText: String {
         if isUnknownState {
-            return "Không rõ trạng thái"
+            return l10n.titleUnknown
         }
-        return isAwakeActive ? "Gập nắp vẫn chạy" : "Ngủ bình thường"
+        return isAwakeActive ? l10n.titleAwake : l10n.titleNormal
     }
 
     private var subtitleText: String {
         if powerManager.isUpdating {
-            return "Đang cập nhật..."
+            return l10n.subUpdating
         }
         if isUnknownState {
-            return "Chưa đọc được trạng thái"
+            return l10n.subUnknown
         }
-        return isAwakeActive ? "Đang chặn sleep (pmset)" : "Mặc định khi gập nắp"
+        return isAwakeActive ? l10n.subAwake : l10n.subNormal
     }
 
     @ViewBuilder
@@ -310,7 +315,7 @@ struct WidgetView: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Đóng thông báo lỗi")
+                .accessibilityLabel(l10n.dismissErrorAccess)
             }
         } else {
             HStack(spacing: 6) {
@@ -319,7 +324,7 @@ struct WidgetView: View {
                         Image(systemName: "flame.fill")
                             .font(.system(size: 9.5))
                             .foregroundStyle(.orange)
-                        Text("Đang dùng pin - tránh bọc kín")
+                        Text(l10n.batteryWarning)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -329,7 +334,7 @@ struct WidgetView: View {
                         Image(systemName: "checkmark.seal.fill")
                             .font(.system(size: 9.5))
                             .foregroundStyle(.green)
-                        Text("1-click không mật khẩu")
+                        Text(l10n.passwordlessActive)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
@@ -340,7 +345,7 @@ struct WidgetView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "key.fill")
                                 .font(.system(size: 9.5))
-                            Text("Bật 1-click không mật khẩu")
+                            Text(l10n.enablePasswordlessShort)
                                 .font(.system(size: 10, weight: .medium))
                         }
                         .foregroundStyle(Color.accentColor)
@@ -388,6 +393,7 @@ private struct HeaderIconButton: View {
 private struct TogglePillButton: View {
     let isOn: Bool
     let isLoading: Bool
+    let accessibilityLabel: String
     let action: () -> Void
 
     var body: some View {
@@ -425,13 +431,17 @@ private struct TogglePillButton: View {
         }
         .buttonStyle(.plain)
         .disabled(isLoading)
-        .accessibilityLabel(isOn ? "Tắt chế độ gập nắp vẫn chạy" : "Bật chế độ gập nắp vẫn chạy")
+        .accessibilityLabel(accessibilityLabel)
     }
 }
 
 private struct QuickSettingsPopover: View {
     @Bindable var powerManager: PowerManager
     let onHideWidget: () -> Void
+
+    private var l10n: L10n {
+        L10n(language: powerManager.language)
+    }
 
     private var appVersionLabel: String {
         let info = Bundle.main.infoDictionary
@@ -443,7 +453,7 @@ private struct QuickSettingsPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Tuỳ chọn LidStay")
+                Text(l10n.settingsTitle)
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                 Spacer()
                 Text(appVersionLabel)
@@ -451,7 +461,7 @@ private struct QuickSettingsPopover: View {
                     .foregroundStyle(.tertiary)
             }
 
-            Text("Lệnh: sudo pmset -a disablesleep \(powerManager.status.isAwakeActive ? "1" : "0")")
+            Text("\(l10n.commandPrefix): sudo pmset -a disablesleep \(powerManager.status.isAwakeActive ? "1" : "0")")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(.secondary)
 
@@ -459,9 +469,9 @@ private struct QuickSettingsPopover: View {
 
             Toggle(isOn: $powerManager.autoRestoreOnLowBattery) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Tự tắt khi pin <= 15%")
+                    Text(l10n.autoRestoreTitle)
                         .font(.system(size: 11.5, weight: .medium))
-                    Text("Chỉ chạy tự động khi đã bật 1-click")
+                    Text(l10n.autoRestoreHint)
                         .font(.system(size: 9.5))
                         .foregroundStyle(.secondary)
                 }
@@ -469,13 +479,28 @@ private struct QuickSettingsPopover: View {
             .toggleStyle(.switch)
             .controlSize(.small)
 
+            HStack {
+                Text(l10n.languageLabel)
+                    .font(.system(size: 11.5, weight: .medium))
+                Spacer()
+                Picker("", selection: $powerManager.language) {
+                    ForEach(AppLanguage.allCases, id: \.self) { lang in
+                        Text(lang.pickerLabel).tag(lang)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .frame(width: 132)
+            }
+
             Divider()
 
             if powerManager.status.passwordlessEnabled {
                 Button(role: .destructive) {
                     powerManager.configurePasswordlessSudo(enable: false)
                 } label: {
-                    Label("Gỡ quyền 1-click không mật khẩu", systemImage: "key.slash")
+                    Label(l10n.removePasswordless, systemImage: "key.slash")
                         .font(.system(size: 11.5))
                 }
                 .buttonStyle(.plain)
@@ -485,7 +510,7 @@ private struct QuickSettingsPopover: View {
                 Button {
                     powerManager.configurePasswordlessSudo(enable: true)
                 } label: {
-                    Label("Cài 1-click không mật khẩu", systemImage: "key.fill")
+                    Label(l10n.installPasswordless, systemImage: "key.fill")
                         .font(.system(size: 11.5))
                 }
                 .buttonStyle(.plain)
@@ -496,13 +521,13 @@ private struct QuickSettingsPopover: View {
             Button {
                 onHideWidget()
             } label: {
-                Label("Ẩn widget khỏi Desktop", systemImage: "eye.slash")
+                Label(l10n.hideWidget, systemImage: "eye.slash")
                     .font(.system(size: 11.5))
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
         }
         .padding(12)
-        .frame(width: 248)
+        .frame(width: 262)
     }
 }
