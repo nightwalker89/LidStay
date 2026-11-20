@@ -119,6 +119,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quitItem.target = self
         menu.addItem(quitItem)
 
+        menu.addItem(.separator())
+
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let build = info?["CFBundleVersion"] as? String ?? "1"
+        let versionItem = NSMenuItem(title: "LidStay v\(short) (\(build))", action: nil, keyEquivalent: "")
+        versionItem.isEnabled = false
+        menu.addItem(versionItem)
+
         item.menu = menu
         self.statusItem = item
     }

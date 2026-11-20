@@ -433,10 +433,23 @@ private struct QuickSettingsPopover: View {
     @Bindable var powerManager: PowerManager
     let onHideWidget: () -> Void
 
+    private var appVersionLabel: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let build = info?["CFBundleVersion"] as? String ?? "1"
+        return "v\(short) (\(build))"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Tuỳ chọn LidStay")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
+            HStack {
+                Text("Tuỳ chọn LidStay")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                Spacer()
+                Text(appVersionLabel)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+            }
 
             Text("Lệnh: sudo pmset -a disablesleep \(powerManager.status.isAwakeActive ? "1" : "0")")
                 .font(.system(size: 10, design: .monospaced))

@@ -21,11 +21,25 @@ A lightweight native macOS desktop widget and menu bar utility for toggling `pms
 ## Build & Install
 
 ```bash
+# Build native arch and install to /Applications/LidStay.app
 ./build.sh
+
+# Or build a Universal Binary (Apple Silicon + Intel)
+./build.sh --universal
+
 open -a /Applications/LidStay.app
 ```
 
 `build.sh` compiles the release binary with SwiftPM, bundles `/Applications/LidStay.app`, and applies an ad-hoc signature.
+
+## Releases (GitHub Actions)
+
+Pushing a version tag (`v*`) triggers `.github/workflows/release.yml` to build a Universal macOS `.app` (`arm64` + `x86_64`), package `.zip` and `.dmg` archives with `SHA256SUMS.txt`, and publish a GitHub Release.
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ## How It Works
 

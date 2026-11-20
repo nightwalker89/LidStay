@@ -1,0 +1,94 @@
+name: Build and Release macOS Universal
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-universal:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Swift toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+          else
+            TAG="v$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
+            VERSION="${TAG#v}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Universal macOS app
+        env:
+          UNIVERSAL: "1"
+          APP_OUT_DIR: "${{ github.workspace }}/dist"
+          APP_VERSION: "${{ steps.version.outputs.version }}"
+          BUILD_NUMBER: "${{ github.run_number }}"
+        run: |
+          ./build.sh
+          ARCHS="$(lipo -archs dist/LidStay.app/Contents/MacOS/LidStay)"
+          echo "Built architectures: ${ARCHS}"
+          [[ "$ARCHS" == *"arm64"* && "$ARCHS" == *"x86_64"* ]]
+
+      - name: Package zip and dmg
+        id: package
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          ZIP_NAME="LidStay-${TAG}-macOS-universal.zip"
+          DMG_NAME="LidStay-${TAG}-macOS-universal.dmg"
+          DMG_STAGE="dist/dmg-stage"
+
+          mkdir -p "$DMG_STAGE"
+          cp -R dist/LidStay.app "$DMG_STAGE/LidStay.app"
+          ln -s /Applications "$DMG_STAGE/Applications"
+
+          ditto -c -k --keepParent dist/LidStay.app "dist/${ZIP_NAME}"
+          hdiutil create -volname "LidStay" -srcfolder "$DMG_STAGE" -ov -format UDZO "dist/${DMG_NAME}"
+
+          (cd dist && shasum -a 256 "${ZIP_NAME}" "${DMG_NAME}" > SHA256SUMS.txt)
+          cat dist/SHA256SUMS.txt
+
+          echo "zip=dist/${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "dmg=dist/${DMG_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LidStay-macOS-universal-${{ steps.version.outputs.tag }}
+          path: |
+            ${{ steps.package.outputs.zip }}
+            ${{ steps.package.outputs.dmg }}
+            dist/SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            "${{ steps.package.outputs.zip }}" \
+            "${{ steps.package.outputs.dmg }}" \
+            "dist/SHA256SUMS.txt" \
+            --title "LidStay ${{ steps.version.outputs.tag }}" \
+            --verify-tag \
+            --generate-notes
