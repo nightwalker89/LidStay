@@ -61,6 +61,8 @@ struct L10n: Equatable {
     var commandPrefix: String { isVi ? "Lệnh" : "Command" }
     var autoRestoreTitle: String { isVi ? "Tự tắt khi pin <= 15%" : "Auto-restore at <= 15% battery" }
     var autoRestoreHint: String { isVi ? "Chỉ chạy tự động khi đã bật 1-click" : "Requires 1-click mode enabled" }
+    var launchAtLoginTitle: String { isVi ? "Khởi động cùng macOS" : "Launch at login" }
+    var launchAtLoginHint: String { isVi ? "Tự mở widget khi đăng nhập" : "Auto-start when you log in" }
     var languageLabel: String { isVi ? "Ngôn ngữ" : "Language" }
     var removePasswordless: String { isVi ? "Gỡ quyền 1-click không mật khẩu" : "Remove 1-click permission" }
     var installPasswordless: String { isVi ? "Cài 1-click không mật khẩu" : "Enable 1-click permission" }

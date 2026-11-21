@@ -36,7 +36,7 @@ LidStay cung cấp công tắc trực tiếp trên desktop để bật/tắt `pm
 | **Bật 1-click không mật khẩu** | Mặc định dùng hộp thoại xác thực của macOS; tuỳ chọn cài rule `/etc/sudoers.d/lidstay-pmset` để gạt công tắc tức thì. |
 | **Ghim tầng Desktop / Float** | Nút ghim chuyển đổi giữa tầng Desktop (nằm dưới cửa sổ app) và Float (nổi trên mọi cửa sổ). |
 | **Tự bảo vệ khi pin yếu** | Tự khôi phục sleep bình thường khi pin giảm xuống `<= 15%` lúc rút sạc (hoạt động khi bật chế độ 1-click). |
-| **Mở cùng macOS** | Bật/tắt khởi động cùng hệ thống qua `SMAppService.mainApp` ngay trong menu bar. |
+| **Khởi động cùng macOS** | Bật/tắt tự chạy khi đăng nhập ngay trong tuỳ chọn widget hoặc menu bar (`~/Library/LaunchAgents`). |
 
 ## Cài đặt
 

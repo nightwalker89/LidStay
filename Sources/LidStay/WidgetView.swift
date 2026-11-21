@@ -467,6 +467,21 @@ private struct QuickSettingsPopover: View {
 
             Divider()
 
+            Toggle(isOn: Binding(
+                get: { powerManager.status.launchAtLoginEnabled },
+                set: { powerManager.setLaunchAtLogin($0) }
+            )) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l10n.launchAtLoginTitle)
+                        .font(.system(size: 11.5, weight: .medium))
+                    Text(l10n.launchAtLoginHint)
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+            .controlSize(.small)
+
             Toggle(isOn: $powerManager.autoRestoreOnLowBattery) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(l10n.autoRestoreTitle)

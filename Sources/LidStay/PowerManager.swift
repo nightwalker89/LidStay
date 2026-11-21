@@ -2,6 +2,7 @@ import Foundation
 import IOKit
 import IOKit.ps
 import Observation
+import ServiceManagement
 
 enum LidSleepState: Equatable {
     case awakeOnClose // disablesleep = 1
@@ -15,6 +16,7 @@ struct PowerStatus: Equatable {
     var batteryPercent: Int? = nil
     var hasBattery: Bool = false
     var passwordlessEnabled: Bool = false
+    var launchAtLoginEnabled: Bool = false
 
     var isAwakeActive: Bool {
         sleepState == .awakeOnClose
@@ -54,7 +56,14 @@ final class PowerManager {
 
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private let sudoersPath = "/etc/sudoers.d/lidstay-pmset"
+    @ObservationIgnored private let launchAgentLabel = "com.nightwalker89.LidStay"
     @ObservationIgnored private var lastLowBatteryAttempt: Date? = nil
+
+    private var launchAgentURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/LaunchAgents", isDirectory: true)
+            .appendingPathComponent("\(launchAgentLabel).plist")
+    }
 
     init() {
         if UserDefaults.standard.object(forKey: "lidstay.autoRestoreLowBattery") == nil {
@@ -83,13 +92,16 @@ final class PowerManager {
         let sleepState = Self.readSleepStateFromIOKit()
         let batteryInfo = Self.readPowerSourceInfo()
         let passwordless = FileManager.default.fileExists(atPath: sudoersPath)
+        let launchAtLogin = FileManager.default.fileExists(atPath: launchAgentURL.path)
+            || SMAppService.mainApp.status == .enabled
 
         let next = PowerStatus(
             sleepState: sleepState,
             isOnACPower: batteryInfo.isAC,
             batteryPercent: batteryInfo.percent,
             hasBattery: batteryInfo.hasBattery,
-            passwordlessEnabled: passwordless
+            passwordlessEnabled: passwordless,
+            launchAtLoginEnabled: launchAtLogin
         )
         if next != status {
             status = next
@@ -159,6 +171,43 @@ final class PowerManager {
                     completion?(false)
                 }
             }
+        }
+    }
+
+    func setLaunchAtLogin(_ enable: Bool) {
+        lastError = nil
+        let agentURL = launchAgentURL
+        let dirURL = agentURL.deletingLastPathComponent()
+
+        do {
+            if enable {
+                try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: true)
+                let executable = Bundle.main.executablePath ?? "/Applications/LidStay.app/Contents/MacOS/LidStay"
+                let plist: [String: Any] = [
+                    "Label": launchAgentLabel,
+                    "ProgramArguments": [executable],
+                    "RunAtLoad": true,
+                    "KeepAlive": false,
+                    "ProcessType": "Interactive",
+                    "LimitLoadToSessionType": ["Aqua"]
+                ]
+                let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+                try data.write(to: agentURL, options: .atomic)
+                if SMAppService.mainApp.status == .enabled {
+                    try? SMAppService.mainApp.unregister()
+                }
+            } else {
+                if FileManager.default.fileExists(atPath: agentURL.path) {
+                    try FileManager.default.removeItem(at: agentURL)
+                }
+                if SMAppService.mainApp.status == .enabled {
+                    try? SMAppService.mainApp.unregister()
+                }
+            }
+            refresh()
+        } catch {
+            lastError = "Launch at login: \(error.localizedDescription)"
+            refresh()
         }
     }
 

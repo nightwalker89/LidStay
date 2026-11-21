@@ -36,7 +36,7 @@ LidStay gives you a single desktop switch to toggle `pmset -a disablesleep` so y
 | **1-Click Passwordless Toggle** | Prompts via macOS admin dialog by default, with an optional scoped `/etc/sudoers.d/lidstay-pmset` rule for instant 1-click switching. |
 | **Desktop vs. Float Layer** | Pin button switches between the desktop layer (under app windows) and floating above windows. |
 | **Low-Battery Safeguard** | Automatically restores normal sleep when battery drops to `<= 15%` while unplugged (requires 1-click passwordless mode). |
-| **Launch at Login** | Enable or disable auto-start directly from the menu bar via `SMAppService.mainApp`. |
+| **Launch at Login** | Enable or disable startup launch from the widget settings or menu bar (`~/Library/LaunchAgents`). |
 
 ## Installation
 

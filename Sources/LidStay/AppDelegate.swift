@@ -176,17 +176,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ? "Gỡ quyền 1-click không mật khẩu"
             : "Cài 1-click không mật khẩu"
 
-        switch SMAppService.mainApp.status {
-        case .enabled:
-            loginItemMenuItem?.title = "Mở cùng macOS"
-            loginItemMenuItem?.state = .on
-        case .requiresApproval:
-            loginItemMenuItem?.title = "Mở cùng macOS (Cần duyệt trong System Settings)"
-            loginItemMenuItem?.state = .mixed
-        default:
-            loginItemMenuItem?.title = "Mở cùng macOS"
-            loginItemMenuItem?.state = .off
-        }
+        loginItemMenuItem?.title = "Khởi động cùng macOS"
+        loginItemMenuItem?.state = powerManager.status.launchAtLoginEnabled ? .on : .off
     }
 
     private func setWidgetVisible(_ visible: Bool) {
@@ -226,20 +217,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func handleToggleLaunchAtLogin() {
-        if SMAppService.mainApp.status == .requiresApproval {
-            SMAppService.openSystemSettingsLoginItems()
-            syncMenuBarState()
-            return
-        }
-        do {
-            if SMAppService.mainApp.status == .enabled {
-                try SMAppService.mainApp.unregister()
-            } else {
-                try SMAppService.mainApp.register()
-            }
-        } catch {
-            powerManager.lastError = "Launch at Login: \(error.localizedDescription)"
-        }
+        powerManager.setLaunchAtLogin(!powerManager.status.launchAtLoginEnabled)
         syncMenuBarState()
     }
 
