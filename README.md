@@ -3,7 +3,7 @@
   <h1>LidStay</h1>
   <p>A lightweight macOS desktop widget and menu bar utility for toggling <code>pmset -a disablesleep</code>.</p>
   <p>
-    <strong>English</strong> | <a href="README.vi.md">Tiếng Việt</a>
+    <strong>English</strong> | <a href="README.vi.md">Tiếng Việt</a> | <a href="CHANGELOG.md">Changelog</a>
   </p>
   <p>
     <a href="https://github.com/nightwalker89/LidStay/releases/latest">
@@ -37,6 +37,7 @@ LidStay gives you a single desktop switch to toggle `pmset -a disablesleep` so y
 | **Desktop vs. Float Layer** | Pin button switches between the desktop layer (under app windows) and floating above windows. |
 | **Low-Battery Safeguard** | Automatically restores normal sleep when battery drops to `<= 15%` while unplugged (requires 1-click passwordless mode). |
 | **Launch at Login** | Enable or disable startup launch from the widget settings or menu bar (`~/Library/LaunchAgents`). |
+| **Bilingual & Single-Instance** | Switch between `Auto`, `EN`, and `VI` in settings; prevents duplicate widget processes on relaunch. |
 
 ## Installation
 

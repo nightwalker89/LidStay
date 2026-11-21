@@ -3,7 +3,7 @@
   <h1>LidStay</h1>
   <p>Widget desktop và menu bar gọn nhẹ cho macOS để bật/tắt <code>pmset -a disablesleep</code>.</p>
   <p>
-    <a href="README.md">English</a> | <strong>Tiếng Việt</strong>
+    <a href="README.md">English</a> | <strong>Tiếng Việt</strong> | <a href="CHANGELOG.md">Changelog</a>
   </p>
   <p>
     <a href="https://github.com/nightwalker89/LidStay/releases/latest">
@@ -37,6 +37,7 @@ LidStay cung cấp công tắc trực tiếp trên desktop để bật/tắt `pm
 | **Ghim tầng Desktop / Float** | Nút ghim chuyển đổi giữa tầng Desktop (nằm dưới cửa sổ app) và Float (nổi trên mọi cửa sổ). |
 | **Tự bảo vệ khi pin yếu** | Tự khôi phục sleep bình thường khi pin giảm xuống `<= 15%` lúc rút sạc (hoạt động khi bật chế độ 1-click). |
 | **Khởi động cùng macOS** | Bật/tắt tự chạy khi đăng nhập ngay trong tuỳ chọn widget hoặc menu bar (`~/Library/LaunchAgents`). |
+| **Song ngữ & Chống mở trùng** | Chọn `Auto` / `EN` / `VI` trong tuỳ chọn; chặn chạy trùng 2 tiến trình khi mở lại app. |
 
 ## Cài đặt
 
