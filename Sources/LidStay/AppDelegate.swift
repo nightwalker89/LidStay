@@ -23,6 +23,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusBar()
         syncMenuBarState()
 
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(handleActivateExisting),
+            name: Notification.Name("com.nightwalker89.LidStay.activateExisting"),
+            object: nil
+        )
+
         menuSyncTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1.5))
@@ -34,6 +41,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         menuSyncTask?.cancel()
+        DistributedNotificationCenter.default().removeObserver(self)
+    }
+
+    @objc private func handleActivateExisting() {
+        setWidgetVisible(true)
     }
 
     private func setupWidgetPanel() {
