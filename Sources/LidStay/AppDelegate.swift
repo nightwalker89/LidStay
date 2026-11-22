@@ -4,10 +4,12 @@ import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let powerManager = PowerManager()
-    private var widgetPanel: FloatingWidgetPanel?
-    private var statusItem: NSStatusItem?
+    private let selfTestMode: Bool
+    let powerManager = PowerManager()
+    private(set) var widgetPanel: FloatingWidgetPanel?
+    private(set) var statusItem: NSStatusItem?
     private var menuSyncTask: Task<Void, Never>?
+    private var selfTestTask: Task<Void, Never>?
 
     private var toggleMenuItem: NSMenuItem?
     private var statusHeaderMenuItem: NSMenuItem?
@@ -18,7 +20,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var loginItemMenuItem: NSMenuItem?
     private var restoreAndQuitMenuItem: NSMenuItem?
 
+    init(selfTestMode: Bool = false) {
+        self.selfTestMode = selfTestMode
+        super.init()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let savedDefaults = selfTestMode ? SelfTest.captureUserDefaults() : nil
+
         setupWidgetPanel()
         setupStatusBar()
         syncMenuBarState()
@@ -37,9 +46,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.syncMenuBarState()
             }
         }
+
+        if selfTestMode {
+            selfTestTask = Task { [weak self] in
+                guard let self else { return }
+                await SelfTest.run(delegate: self, savedDefaults: savedDefaults)
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        selfTestTask?.cancel()
         menuSyncTask?.cancel()
         DistributedNotificationCenter.default().removeObserver(self)
     }
@@ -144,7 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusItem = item
     }
 
-    private func syncMenuBarState() {
+    func syncMenuBarState() {
         let state = powerManager.status.sleepState
         let active = (state == .awakeOnClose)
         let busy = powerManager.isUpdating
@@ -192,7 +209,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         loginItemMenuItem?.state = powerManager.status.launchAtLoginEnabled ? .on : .off
     }
 
-    private func setWidgetVisible(_ visible: Bool) {
+    func setWidgetVisible(_ visible: Bool) {
         UserDefaults.standard.set(visible, forKey: "lidstay.widgetVisible")
         if visible {
             widgetPanel?.clampToVisibleScreen()

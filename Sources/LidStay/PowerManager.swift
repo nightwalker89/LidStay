@@ -65,12 +65,14 @@ final class PowerManager {
             .appendingPathComponent("\(launchAgentLabel).plist")
     }
 
-    init() {
+    init(startPollingOnInit: Bool = true) {
         if UserDefaults.standard.object(forKey: "lidstay.autoRestoreLowBattery") == nil {
             autoRestoreOnLowBattery = true
         }
         refresh()
-        startPolling()
+        if startPollingOnInit {
+            startPolling()
+        }
     }
 
     deinit {

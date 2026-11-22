@@ -28,20 +28,26 @@ private func hasOtherRunningInstance() -> Bool {
         .contains { $0.processIdentifier != currentPID && !$0.isTerminated }
 }
 
-guard let instanceLockFD = acquireSingleInstanceLock(), !hasOtherRunningInstance() else {
-    DistributedNotificationCenter.default().postNotificationName(
-        activateExistingNotification,
-        object: nil,
-        userInfo: nil,
-        deliverImmediately: true
-    )
-    exit(0)
+let isSelfTest = CommandLine.arguments.contains("--self-test")
+
+var instanceLockFD: Int32? = nil
+if !isSelfTest {
+    guard let fd = acquireSingleInstanceLock(), !hasOtherRunningInstance() else {
+        DistributedNotificationCenter.default().postNotificationName(
+            activateExistingNotification,
+            object: nil,
+            userInfo: nil,
+            deliverImmediately: true
+        )
+        exit(0)
+    }
+    instanceLockFD = fd
 }
 
 _ = instanceLockFD
 
 let app = NSApplication.shared
-let delegate = AppDelegate()
+let delegate = AppDelegate(selfTestMode: isSelfTest)
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
 app.run()
