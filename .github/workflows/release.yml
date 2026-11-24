@@ -172,11 +172,13 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release create "${{ needs.build-universal.outputs.tag }}" \
             "dist/${{ needs.build-universal.outputs.zip_name }}" \
             "dist/${{ needs.build-universal.outputs.dmg_name }}" \
             "dist/SHA256SUMS.txt" \
+            --repo "${{ github.repository }}" \
             --title "LidStay ${{ needs.build-universal.outputs.tag }}" \
             --verify-tag \
             --generate-notes
