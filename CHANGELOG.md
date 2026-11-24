@@ -2,6 +2,15 @@
 
 All notable changes to LidStay are documented in this file.
 
+## [1.1.1] - 2026-11-24
+
+### Fixed
+- Replaced clipped SwiftUI drop shadow and `14pt` panel padding with native macOS window shadow (`hasShadow = true`) and continuous `22pt` rounded clipping (`296×138`), eliminating the dark rectangular shadow box around the widget.
+- Fixed menu bar status icon rendering solid black when awake mode is active by always using a monochrome template image (`isTemplate = true`) that adapts to light and dark/colored menu bars.
+
+### Added
+- Built-in `--self-test` runtime verification mode and macOS Intel (`x86_64`) CI verification workflow (`scripts/verify_runtime.sh`).
+
 ## [1.1.0] - 2026-11-21
 
 ### Added
