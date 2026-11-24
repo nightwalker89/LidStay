@@ -5,9 +5,16 @@ extension EnvironmentValues {
     @Entry var useStaticBackdropForRender: Bool = false
 }
 
+enum WidgetLayout {
+    static let width: CGFloat = 296
+    static let height: CGFloat = 138
+    static let cornerRadius: CGFloat = 22
+}
+
 struct VisualEffectBackdrop: NSViewRepresentable {
     var material: NSVisualEffectView.Material = .hudWindow
     var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+    var cornerRadius: CGFloat = WidgetLayout.cornerRadius
 
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
@@ -15,6 +22,10 @@ struct VisualEffectBackdrop: NSViewRepresentable {
         view.blendingMode = blendingMode
         view.state = .active
         view.isEmphasized = true
+        view.wantsLayer = true
+        view.layer?.cornerRadius = cornerRadius
+        view.layer?.cornerCurve = .continuous
+        view.layer?.masksToBounds = true
         return view
     }
 
@@ -22,6 +33,10 @@ struct VisualEffectBackdrop: NSViewRepresentable {
         nsView.material = material
         nsView.blendingMode = blendingMode
         nsView.state = .active
+        nsView.wantsLayer = true
+        nsView.layer?.cornerRadius = cornerRadius
+        nsView.layer?.cornerCurve = .continuous
+        nsView.layer?.masksToBounds = true
     }
 }
 
@@ -73,11 +88,9 @@ struct WidgetView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 13)
         }
-        .frame(width: 296, height: 138)
-        .clipShape(.rect(cornerRadius: 22))
+        .frame(width: WidgetLayout.width, height: WidgetLayout.height)
+        .clipShape(RoundedRectangle(cornerRadius: WidgetLayout.cornerRadius, style: .continuous))
         .overlay(cardBorder)
-        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 6)
-        .padding(14)
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.18)) {
                 isHoveringCard = hovering
@@ -90,10 +103,14 @@ struct WidgetView: View {
     private var cardBackground: some View {
         ZStack {
             if useStaticBackdropForRender {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: WidgetLayout.cornerRadius, style: .continuous)
                     .fill(Color(red: 0.14, green: 0.15, blue: 0.20).opacity(0.84))
             } else {
-                VisualEffectBackdrop(material: .popover, blendingMode: .behindWindow)
+                VisualEffectBackdrop(
+                    material: .popover,
+                    blendingMode: .behindWindow,
+                    cornerRadius: WidgetLayout.cornerRadius
+                )
             }
 
             if isAwakeActive {
@@ -111,7 +128,7 @@ struct WidgetView: View {
     }
 
     private var cardBorder: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
+        RoundedRectangle(cornerRadius: WidgetLayout.cornerRadius, style: .continuous)
             .strokeBorder(
                 isAwakeActive
                     ? Color.orange.opacity(0.42)

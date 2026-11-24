@@ -133,6 +133,11 @@ enum SelfTest {
         guard let panel = delegate.widgetPanel else {
             throw SelfTestFailure(message: "widgetPanel was not initialized")
         }
+        try assertCondition(panel.hasShadow, "Expected native window shadow to be enabled")
+        try assertCondition(
+            panel.frame.size == NSSize(width: WidgetLayout.width, height: WidgetLayout.height),
+            "Unexpected widget panel size: \(panel.frame.size)"
+        )
         panel.clampToVisibleScreen()
         let originalPinned = powerManager.isPinnedOnTop
         let desktopIconLevel = Int(CGWindowLevelForKey(.desktopIconWindow))
@@ -168,6 +173,10 @@ enum SelfTest {
         try assertCondition(
             statusItem.button?.image != nil,
             "Status bar button image failed to resolve"
+        )
+        try assertCondition(
+            statusItem.button?.image?.isTemplate == true,
+            "Status bar button image should be a template image to match menu bar appearance"
         )
 
         // 4. SF Symbols check
@@ -239,7 +248,7 @@ enum SelfTest {
         .environment(\.useStaticBackdropForRender, useStaticBackdrop)
 
         let hosting = NSHostingView(rootView: view)
-        hosting.frame = NSRect(x: 0, y: 0, width: 324, height: 166)
+        hosting.frame = NSRect(x: 0, y: 0, width: WidgetLayout.width, height: WidgetLayout.height)
         hosting.layoutSubtreeIfNeeded()
 
         guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else {

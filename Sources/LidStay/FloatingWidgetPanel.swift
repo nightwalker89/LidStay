@@ -22,7 +22,7 @@ final class FloatingWidgetPanel: NSPanel {
         self.becomesKeyOnlyIfNeeded = true
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.hasShadow = false
+        self.hasShadow = true
         self.isMovableByWindowBackground = true
         self.hidesOnDeactivate = false
         self.animationBehavior = .utilityWindow
@@ -60,6 +60,7 @@ final class FloatingWidgetPanel: NSPanel {
             self.level = NSWindow.Level(rawValue: desktopIconLevel + 1)
             self.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         }
+        self.invalidateShadow()
     }
 
     func clampToVisibleScreen() {

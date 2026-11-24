@@ -66,8 +66,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupWidgetPanel() {
+        let widgetSize = NSSize(width: WidgetLayout.width, height: WidgetLayout.height)
         let panel = FloatingWidgetPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 324, height: 166),
+            contentRect: NSRect(origin: .zero, size: widgetSize),
             initialPinned: powerManager.isPinnedOnTop
         )
 
@@ -82,12 +83,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         let hosting = NSHostingView(rootView: rootView)
-        hosting.frame = NSRect(x: 0, y: 0, width: 324, height: 166)
+        hosting.frame = NSRect(origin: .zero, size: widgetSize)
+        hosting.wantsLayer = true
+        hosting.layer?.backgroundColor = NSColor.clear.cgColor
+        hosting.layer?.cornerRadius = WidgetLayout.cornerRadius
+        hosting.layer?.cornerCurve = .continuous
+        hosting.layer?.masksToBounds = true
         panel.contentView = hosting
+        panel.invalidateShadow()
 
         let shouldShow = UserDefaults.standard.object(forKey: "lidstay.widgetVisible") as? Bool ?? true
         if shouldShow {
             panel.orderFrontRegardless()
+            Task { @MainActor in
+                panel.invalidateShadow()
+            }
         }
         self.widgetPanel = panel
     }
@@ -169,9 +179,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let symbolName = active ? "laptopcomputer" : "moon.zzz"
         if let button = statusItem?.button {
             let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "LidStay")
-            image?.isTemplate = !active
+            image?.isTemplate = true
             button.image = image
-            button.contentTintColor = active ? .systemOrange : nil
+            button.contentTintColor = nil
         }
 
         switch state {
@@ -214,6 +224,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if visible {
             widgetPanel?.clampToVisibleScreen()
             widgetPanel?.orderFrontRegardless()
+            widgetPanel?.invalidateShadow()
         } else {
             widgetPanel?.orderOut(nil)
         }
