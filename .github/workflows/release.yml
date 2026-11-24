@@ -1,5 +1,13 @@
 name: Build and Release macOS Universal
 
+run-name: >-
+  ${{
+    startsWith(github.ref, 'refs/tags/v') && format('Release {0} — Build, Verify (arm64 + Intel) & Publish', github.ref_name) ||
+    github.event_name == 'pull_request' && format('PR #{0} ({1}) — Build & Verify (arm64 + Intel)', github.event.pull_request.number, github.head_ref) ||
+    github.event_name == 'workflow_dispatch' && format('Manual ({0}) — Build & Verify (arm64 + Intel)', github.ref_name) ||
+    format('CI ({0}) — Build & Verify (arm64 + Intel)', github.ref_name)
+  }}
+
 on:
   push:
     branches:
@@ -99,6 +107,20 @@ jobs:
             ${{ steps.package.outputs.dmg }}
             dist/SHA256SUMS.txt
 
+      - name: Write build summary
+        run: |
+          {
+            echo "### Universal Build & Apple Silicon Verification"
+            echo "- **Trigger:** \`${{ github.event_name }}\` on \`${{ github.ref_name }}\`"
+            echo "- **Version:** \`${{ steps.version.outputs.tag }}\` (build \`${{ github.run_number }}\`)"
+            echo "- **Architectures:** \`$(lipo -archs dist/LidStay.app/Contents/MacOS/LidStay)\`"
+            echo "- **Apple Silicon (\`arm64\`) self-test & live launch:** passed"
+            echo ""
+            echo '```text'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   test-intel:
     name: Verify Intel (x86_64) Runtime
     needs: build-universal
@@ -152,6 +174,16 @@ jobs:
             --require-live-launch \
             --app "dist-intel-native/LidStay.app"
 
+      - name: Write Intel verification summary
+        run: |
+          {
+            echo "### Intel (\`x86_64\`) Runtime Verification"
+            echo "- **Runner:** \`$(uname -m)\` on macOS \`$(sw_vers -productVersion)\`"
+            echo "- **Artifact checksums:** verified"
+            echo "- **Universal \`.zip\` / \`.dmg\` native \`x86_64\` runtime:** passed"
+            echo "- **Native Intel source build runtime:** passed"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   release:
     name: Create GitHub Release
     needs:
@@ -174,11 +206,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "${{ needs.build-universal.outputs.tag }}" \
+          TAG="${{ needs.build-universal.outputs.tag }}"
+          gh release create "${TAG}" \
             "dist/${{ needs.build-universal.outputs.zip_name }}" \
             "dist/${{ needs.build-universal.outputs.dmg_name }}" \
             "dist/SHA256SUMS.txt" \
             --repo "${{ github.repository }}" \
-            --title "LidStay ${{ needs.build-universal.outputs.tag }}" \
+            --title "LidStay ${TAG}" \
             --verify-tag \
             --generate-notes
+          {
+            echo "### GitHub Release Published"
+            echo "- **Tag:** \`${TAG}\`"
+            echo "- **URL:** https://github.com/${{ github.repository }}/releases/tag/${TAG}"
+            echo "- **Assets:** \`${{ needs.build-universal.outputs.zip_name }}\`, \`${{ needs.build-universal.outputs.dmg_name }}\`, \`SHA256SUMS.txt\`"
+          } >> "$GITHUB_STEP_SUMMARY"
