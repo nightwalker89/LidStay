@@ -2,6 +2,16 @@
 
 All notable changes to LidStay are documented in this file.
 
+## [1.1.2] - 2026-11-26
+
+### Added
+- Native macOS `Language` / `Ngôn ngữ` submenu (`Auto (System)`, `English`, `Tiếng Việt`) with checkmark state in the menu bar dropdown.
+- Runtime `--self-test` coverage verifying menu bar language switching and submenu checkmarks.
+
+### Fixed
+- Localized all menu bar item titles and `PowerManager` error messages via `L10n` instead of hardcoded Vietnamese strings.
+- Synced menu bar state immediately via `NSMenuDelegate.menuWillOpen` so language changes made in the desktop widget reflect right away.
+
 ## [1.1.1] - 2026-11-24
 
 ### Fixed
