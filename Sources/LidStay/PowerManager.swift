@@ -145,12 +145,14 @@ final class PowerManager {
         let valueArg = disable ? "1" : "0"
         let expectedState: LidSleepState = disable ? .awakeOnClose : .normalSleep
         let hasSudoers = FileManager.default.fileExists(atPath: sudoersPath)
+        let l10n = L10n(language: language)
 
         Task.detached { [weak self] in
             let result = Self.executePmset(
                 value: valueArg,
                 tryPasswordless: hasSudoers,
-                allowInteractivePrompt: allowInteractivePrompt
+                allowInteractivePrompt: allowInteractivePrompt,
+                l10n: l10n
             )
             let observed = Self.readSleepStateFromIOKit()
             await MainActor.run { [weak self] in
@@ -163,7 +165,7 @@ final class PowerManager {
                         self.lastError = nil
                         completion?(true)
                     } else {
-                        self.lastError = "Không xác nhận được trạng thái pmset mới."
+                        self.lastError = L10n(language: self.language).errVerifyPmset
                         completion?(false)
                     }
                 case .failure(let err):
@@ -208,7 +210,7 @@ final class PowerManager {
             }
             refresh()
         } catch {
-            lastError = "Launch at login: \(error.localizedDescription)"
+            lastError = L10n(language: language).errLaunchAtLogin(error.localizedDescription)
             refresh()
         }
     }
@@ -220,9 +222,10 @@ final class PowerManager {
 
         let user = NSUserName()
         let path = sudoersPath
+        let l10n = L10n(language: language)
 
         Task.detached { [weak self] in
-            let result = Self.updateSudoers(enable: enable, username: user, path: path)
+            let result = Self.updateSudoers(enable: enable, username: user, path: path, l10n: l10n)
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.isUpdating = false
@@ -304,10 +307,11 @@ final class PowerManager {
     nonisolated private static func executePmset(
         value: String,
         tryPasswordless: Bool,
-        allowInteractivePrompt: Bool
+        allowInteractivePrompt: Bool,
+        l10n: L10n
     ) -> Result<Void, CommandFailure> {
         guard value == "0" || value == "1" else {
-            return .failure(CommandFailure(message: "Tham số pmset không hợp lệ.", isCancelled: false))
+            return .failure(CommandFailure(message: l10n.errInvalidPmsetArg, isCancelled: false))
         }
 
         if tryPasswordless {
@@ -320,14 +324,14 @@ final class PowerManager {
             }
             if !allowInteractivePrompt {
                 return .failure(CommandFailure(
-                    message: sudoAttempt.stderr.isEmpty ? "Không có quyền sudo không mật khẩu." : sudoAttempt.stderr,
+                    message: sudoAttempt.stderr.isEmpty ? l10n.errNoPasswordlessSudo : sudoAttempt.stderr,
                     isCancelled: false
                 ))
             }
         }
 
         guard allowInteractivePrompt else {
-            return .failure(CommandFailure(message: "Chưa bật quyền 1-click không mật khẩu.", isCancelled: false))
+            return .failure(CommandFailure(message: l10n.errPasswordlessNotEnabled, isCancelled: false))
         }
 
         let script = "do shell script \"/usr/bin/pmset -a disablesleep \(value)\" with administrator privileges"
@@ -338,14 +342,14 @@ final class PowerManager {
 
         let cancelled = adminAttempt.stderr.localizedCaseInsensitiveContains("User canceled")
             || adminAttempt.stderr.contains("-128")
-        let msg = cancelled ? "Đã huỷ xác thực." : (adminAttempt.stderr.isEmpty ? "Không thể chạy pmset." : adminAttempt.stderr)
+        let msg = cancelled ? l10n.errAuthCancelled : (adminAttempt.stderr.isEmpty ? l10n.errPmsetFailed : adminAttempt.stderr)
         return .failure(CommandFailure(message: msg, isCancelled: cancelled))
     }
 
-    nonisolated private static func updateSudoers(enable: Bool, username: String, path: String) -> Result<Void, CommandFailure> {
+    nonisolated private static func updateSudoers(enable: Bool, username: String, path: String, l10n: L10n) -> Result<Void, CommandFailure> {
         let validUser = username.range(of: "^[a-zA-Z0-9._-]+$", options: .regularExpression) != nil
         guard validUser else {
-            return .failure(CommandFailure(message: "Tên người dùng không hợp lệ.", isCancelled: false))
+            return .failure(CommandFailure(message: l10n.errInvalidUsername, isCancelled: false))
         }
 
         let shellCommand: String
@@ -368,7 +372,7 @@ final class PowerManager {
         }
         let cancelled = attempt.stderr.localizedCaseInsensitiveContains("User canceled")
             || attempt.stderr.contains("-128")
-        let msg = cancelled ? "Đã huỷ xác thực." : (attempt.stderr.isEmpty ? "Không thể cập nhật quyền sudoers." : attempt.stderr)
+        let msg = cancelled ? l10n.errAuthCancelled : (attempt.stderr.isEmpty ? l10n.errSudoersUpdateFailed : attempt.stderr)
         return .failure(CommandFailure(message: msg, isCancelled: cancelled))
     }
 

@@ -185,12 +185,41 @@ enum SelfTest {
             try assertCondition(image != nil, "Missing SF Symbol on host: \(symbol)")
         }
 
-        // 5. Localization sanity check
+        // 5. Localization & menu language submenu check
         let en = L10n(language: .en)
         let vi = L10n(language: .vi)
         try assertCondition(!en.titleAwake.isEmpty && !vi.titleAwake.isEmpty, "Empty localized strings")
         try assertCondition(en.titleAwake != vi.titleAwake, "EN and VI localization strings should differ")
         try assertCondition(en.titleNormal != vi.titleNormal, "EN and VI normal sleep titles should differ")
+
+        guard let langItem = delegate.languageMenuItem, let langSubmenu = langItem.submenu else {
+            throw SelfTestFailure(message: "Language submenu missing from status bar menu")
+        }
+        try assertCondition(
+            langSubmenu.items.count == AppLanguage.allCases.count,
+            "Unexpected language submenu count: \(langSubmenu.items.count)"
+        )
+        let originalLang = powerManager.language
+        defer { delegate.selectLanguage(originalLang) }
+
+        delegate.selectLanguage(.en)
+        try assertCondition(langItem.title == en.languageLabel, "Expected EN language menu title, got: \(langItem.title)")
+        try assertCondition(
+            langSubmenu.items.first(where: { ($0.representedObject as? String) == AppLanguage.en.rawValue })?.state == .on,
+            "Expected EN submenu item to be checked"
+        )
+        try assertCondition(
+            langSubmenu.items.first(where: { ($0.representedObject as? String) == AppLanguage.vi.rawValue })?.state == .off,
+            "Expected VI submenu item to be unchecked when EN is active"
+        )
+
+        delegate.selectLanguage(.vi)
+        try assertCondition(langItem.title == vi.languageLabel, "Expected VI language menu title, got: \(langItem.title)")
+        try assertCondition(
+            langSubmenu.items.first(where: { ($0.representedObject as? String) == AppLanguage.vi.rawValue })?.state == .on,
+            "Expected VI submenu item to be checked"
+        )
+        delegate.selectLanguage(originalLang)
 
         // 6. SwiftUI WidgetView layout & bitmap rendering across states and locales
         try renderWidgetScenario(

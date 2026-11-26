@@ -1,6 +1,6 @@
 import Foundation
 
-enum AppLanguage: String, CaseIterable, Equatable {
+enum AppLanguage: String, CaseIterable, Equatable, Sendable {
     case system
     case en
     case vi
@@ -25,7 +25,7 @@ enum AppLanguage: String, CaseIterable, Equatable {
     }
 }
 
-struct L10n: Equatable {
+struct L10n: Equatable, Sendable {
     let isVi: Bool
 
     init(language: AppLanguage) {
@@ -67,4 +67,75 @@ struct L10n: Equatable {
     var removePasswordless: String { isVi ? "Gỡ quyền 1-click không mật khẩu" : "Remove 1-click permission" }
     var installPasswordless: String { isVi ? "Cài 1-click không mật khẩu" : "Enable 1-click permission" }
     var hideWidget: String { isVi ? "Ẩn widget khỏi Desktop" : "Hide desktop widget" }
+
+    // MARK: - Menu Bar
+    var menuStatusAwake: String {
+        isVi ? "Trạng thái: Đang chặn sleep (disablesleep = 1)" : "Status: Sleep disabled (disablesleep = 1)"
+    }
+    var menuStatusNormal: String {
+        isVi ? "Trạng thái: Ngủ bình thường (disablesleep = 0)" : "Status: Normal sleep (disablesleep = 0)"
+    }
+    var menuStatusUnknown: String {
+        isVi ? "Trạng thái: Không rõ (IOPMrootDomain)" : "Status: Unknown (IOPMrootDomain)"
+    }
+    func menuError(_ message: String) -> String {
+        isVi ? "Lỗi: \(message) (Bấm để xoá)" : "Error: \(message) (Click to dismiss)"
+    }
+    var menuToggleDisable: String {
+        isVi ? "Tắt chặn sleep (Về mặc định)" : "Disable stay-awake (Restore default)"
+    }
+    var menuToggleEnable: String {
+        isVi ? "Bật gập nắp vẫn chạy" : "Enable awake on close"
+    }
+    var menuShowWidget: String {
+        isVi ? "Hiện Widget trên Desktop" : "Show Desktop Widget"
+    }
+    var menuPinTop: String {
+        isVi ? "Ghim nổi trên cửa sổ" : "Pin Above Windows"
+    }
+    func menuLanguageOption(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .system:
+            return isVi ? "Tự động (Hệ thống)" : "Auto (System)"
+        case .en:
+            return "English"
+        case .vi:
+            return "Tiếng Việt"
+        }
+    }
+    var menuRestoreAndQuit: String {
+        isVi ? "Tắt chặn sleep & Thoát" : "Restore Sleep & Quit"
+    }
+    var menuQuitKeepState: String {
+        isVi ? "Thoát (Giữ nguyên trạng thái)" : "Quit (Keep current state)"
+    }
+
+    // MARK: - Errors
+    var errVerifyPmset: String {
+        isVi ? "Không xác nhận được trạng thái pmset mới." : "Could not verify updated pmset state."
+    }
+    var errInvalidPmsetArg: String {
+        isVi ? "Tham số pmset không hợp lệ." : "Invalid pmset argument."
+    }
+    var errNoPasswordlessSudo: String {
+        isVi ? "Không có quyền sudo không mật khẩu." : "Passwordless sudo permission is not available."
+    }
+    var errPasswordlessNotEnabled: String {
+        isVi ? "Chưa bật quyền 1-click không mật khẩu." : "1-click passwordless mode is not enabled."
+    }
+    var errAuthCancelled: String {
+        isVi ? "Đã huỷ xác thực." : "Authentication cancelled."
+    }
+    var errPmsetFailed: String {
+        isVi ? "Không thể chạy pmset." : "Unable to run pmset."
+    }
+    var errInvalidUsername: String {
+        isVi ? "Tên người dùng không hợp lệ." : "Invalid username."
+    }
+    var errSudoersUpdateFailed: String {
+        isVi ? "Không thể cập nhật quyền sudoers." : "Unable to update sudoers permission."
+    }
+    func errLaunchAtLogin(_ detail: String) -> String {
+        isVi ? "Khởi động cùng macOS: \(detail)" : "Launch at login: \(detail)"
+    }
 }

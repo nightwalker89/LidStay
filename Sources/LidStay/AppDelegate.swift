@@ -3,7 +3,7 @@ import ServiceManagement
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let selfTestMode: Bool
     let powerManager = PowerManager()
     private(set) var widgetPanel: FloatingWidgetPanel?
@@ -18,7 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var pinTopMenuItem: NSMenuItem?
     private var passwordlessMenuItem: NSMenuItem?
     private var loginItemMenuItem: NSMenuItem?
+    private(set) var languageMenuItem: NSMenuItem?
+    private var languageOptionItems: [AppLanguage: NSMenuItem] = [:]
     private var restoreAndQuitMenuItem: NSMenuItem?
+    private var quitMenuItem: NSMenuItem?
 
     init(selfTestMode: Bool = false) {
         self.selfTestMode = selfTestMode
@@ -106,8 +109,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         let menu = NSMenu()
         menu.autoenablesItems = false
+        menu.delegate = self
 
-        let header = NSMenuItem(title: "Trạng thái: Ngủ bình thường", action: nil, keyEquivalent: "")
+        let l10n = L10n(language: powerManager.language)
+
+        let header = NSMenuItem(title: l10n.menuStatusNormal, action: nil, keyEquivalent: "")
         header.isEnabled = false
         menu.addItem(header)
         statusHeaderMenuItem = header
@@ -118,45 +124,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(errorItem)
         errorMenuItem = errorItem
 
-        let toggleItem = NSMenuItem(title: "Bật gập nắp vẫn chạy", action: #selector(handleToggleSleep), keyEquivalent: "t")
+        let toggleItem = NSMenuItem(title: l10n.menuToggleEnable, action: #selector(handleToggleSleep), keyEquivalent: "t")
         toggleItem.target = self
         menu.addItem(toggleItem)
         toggleMenuItem = toggleItem
 
         menu.addItem(.separator())
 
-        let showItem = NSMenuItem(title: "Hiện Widget trên Desktop", action: #selector(handleToggleWidgetVisibility), keyEquivalent: "w")
+        let showItem = NSMenuItem(title: l10n.menuShowWidget, action: #selector(handleToggleWidgetVisibility), keyEquivalent: "w")
         showItem.target = self
         menu.addItem(showItem)
         showWidgetMenuItem = showItem
 
-        let pinItem = NSMenuItem(title: "Ghim nổi trên cửa sổ", action: #selector(handleTogglePin), keyEquivalent: "p")
+        let pinItem = NSMenuItem(title: l10n.menuPinTop, action: #selector(handleTogglePin), keyEquivalent: "p")
         pinItem.target = self
         menu.addItem(pinItem)
         pinTopMenuItem = pinItem
 
         menu.addItem(.separator())
 
-        let passItem = NSMenuItem(title: "Cài 1-click không mật khẩu", action: #selector(handleTogglePasswordless), keyEquivalent: "")
+        let passItem = NSMenuItem(title: l10n.installPasswordless, action: #selector(handleTogglePasswordless), keyEquivalent: "")
         passItem.target = self
         menu.addItem(passItem)
         passwordlessMenuItem = passItem
 
-        let loginItem = NSMenuItem(title: "Mở cùng macOS", action: #selector(handleToggleLaunchAtLogin), keyEquivalent: "")
+        let loginItem = NSMenuItem(title: l10n.launchAtLoginTitle, action: #selector(handleToggleLaunchAtLogin), keyEquivalent: "")
         loginItem.target = self
         menu.addItem(loginItem)
         loginItemMenuItem = loginItem
 
+        let langItem = NSMenuItem(title: l10n.languageLabel, action: nil, keyEquivalent: "")
+        let langSubmenu = NSMenu()
+        langSubmenu.autoenablesItems = false
+        languageOptionItems.removeAll()
+        for lang in AppLanguage.allCases {
+            let optItem = NSMenuItem(
+                title: l10n.menuLanguageOption(lang),
+                action: #selector(handleSelectLanguage(_:)),
+                keyEquivalent: ""
+            )
+            optItem.target = self
+            optItem.representedObject = lang.rawValue
+            langSubmenu.addItem(optItem)
+            languageOptionItems[lang] = optItem
+        }
+        langItem.submenu = langSubmenu
+        menu.addItem(langItem)
+        languageMenuItem = langItem
+
         menu.addItem(.separator())
 
-        let restoreQuit = NSMenuItem(title: "Tắt chặn sleep & Thoát", action: #selector(handleRestoreAndQuit), keyEquivalent: "")
+        let restoreQuit = NSMenuItem(title: l10n.menuRestoreAndQuit, action: #selector(handleRestoreAndQuit), keyEquivalent: "")
         restoreQuit.target = self
         menu.addItem(restoreQuit)
         restoreAndQuitMenuItem = restoreQuit
 
-        let quitItem = NSMenuItem(title: "Thoát (Giữ nguyên trạng thái)", action: #selector(handleQuit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: l10n.menuQuitKeepState, action: #selector(handleQuit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
+        quitMenuItem = quitItem
 
         menu.addItem(.separator())
 
@@ -171,10 +197,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusItem = item
     }
 
+    func menuWillOpen(_ menu: NSMenu) {
+        syncMenuBarState()
+    }
+
     func syncMenuBarState() {
         let state = powerManager.status.sleepState
         let active = (state == .awakeOnClose)
         let busy = powerManager.isUpdating
+        let l10n = L10n(language: powerManager.language)
 
         let symbolName = active ? "laptopcomputer" : "moon.zzz"
         if let button = statusItem?.button {
@@ -186,18 +217,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch state {
         case .awakeOnClose:
-            statusHeaderMenuItem?.title = "Trạng thái: Đang chặn sleep (disablesleep = 1)"
-            toggleMenuItem?.title = "Tắt chặn sleep (Về mặc định)"
+            statusHeaderMenuItem?.title = l10n.menuStatusAwake
+            toggleMenuItem?.title = l10n.menuToggleDisable
         case .normalSleep:
-            statusHeaderMenuItem?.title = "Trạng thái: Ngủ bình thường (disablesleep = 0)"
-            toggleMenuItem?.title = "Bật gập nắp vẫn chạy"
+            statusHeaderMenuItem?.title = l10n.menuStatusNormal
+            toggleMenuItem?.title = l10n.menuToggleEnable
         case .unknown:
-            statusHeaderMenuItem?.title = "Trạng thái: Không rõ (IOPMrootDomain)"
-            toggleMenuItem?.title = "Bật gập nắp vẫn chạy"
+            statusHeaderMenuItem?.title = l10n.menuStatusUnknown
+            toggleMenuItem?.title = l10n.menuToggleEnable
         }
 
         if let err = powerManager.lastError, !err.isEmpty {
-            errorMenuItem?.title = "Lỗi: \(err) (Bấm để xoá)"
+            errorMenuItem?.title = l10n.menuError(err)
             errorMenuItem?.isHidden = false
         } else {
             errorMenuItem?.isHidden = true
@@ -208,15 +239,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         restoreAndQuitMenuItem?.isEnabled = !busy
 
         let isVisible = widgetPanel?.isVisible ?? false
+        showWidgetMenuItem?.title = l10n.menuShowWidget
         showWidgetMenuItem?.state = isVisible ? .on : .off
+        pinTopMenuItem?.title = l10n.menuPinTop
         pinTopMenuItem?.state = powerManager.isPinnedOnTop ? .on : .off
 
         passwordlessMenuItem?.title = powerManager.status.passwordlessEnabled
-            ? "Gỡ quyền 1-click không mật khẩu"
-            : "Cài 1-click không mật khẩu"
+            ? l10n.removePasswordless
+            : l10n.installPasswordless
 
-        loginItemMenuItem?.title = "Khởi động cùng macOS"
+        loginItemMenuItem?.title = l10n.launchAtLoginTitle
         loginItemMenuItem?.state = powerManager.status.launchAtLoginEnabled ? .on : .off
+
+        languageMenuItem?.title = l10n.languageLabel
+        for lang in AppLanguage.allCases {
+            guard let optItem = languageOptionItems[lang] else { continue }
+            optItem.title = l10n.menuLanguageOption(lang)
+            optItem.state = (powerManager.language == lang) ? .on : .off
+        }
+
+        restoreAndQuitMenuItem?.title = l10n.menuRestoreAndQuit
+        quitMenuItem?.title = l10n.menuQuitKeepState
     }
 
     func setWidgetVisible(_ visible: Bool) {
@@ -258,6 +301,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func handleToggleLaunchAtLogin() {
         powerManager.setLaunchAtLogin(!powerManager.status.launchAtLoginEnabled)
+        syncMenuBarState()
+    }
+
+    @objc private func handleSelectLanguage(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let lang = AppLanguage(rawValue: raw) else { return }
+        selectLanguage(lang)
+    }
+
+    func selectLanguage(_ language: AppLanguage) {
+        powerManager.language = language
         syncMenuBarState()
     }
 
